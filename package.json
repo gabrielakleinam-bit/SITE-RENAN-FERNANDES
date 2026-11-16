@@ -11,12 +11,20 @@
     "test": "node --test --experimental-strip-types src/lib/*.test.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
+    "hls.js": "^1.7.4",
     "next": "^15.5.29",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
+    "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "typescript": "^5.8.3"

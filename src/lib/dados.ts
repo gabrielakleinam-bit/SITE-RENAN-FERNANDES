@@ -15,7 +15,7 @@ export const RENAN = {
   tiktokTxt: '@renan_fernandes30',
 };
 
-type Base = Omit<Curso, 'modulos' | 'exemplo'>;
+type Base = Omit<Curso, 'modulos' | 'exemplo' | 'uuid'>;
 
 const BASE: Base[] = [
   { id: 'lombar', titulo: 'Lombar travada: alívio em casa', formacao: 'Para você', professor: 'Renan Fernandes', preco: 87, nota: 4.9, alunos: 2140,
@@ -66,7 +66,7 @@ function modulosExemplo(c: Base): Modulo[] {
   });
 }
 
-export const CURSOS: Curso[] = BASE.map(c => ({ ...c, modulos: modulosExemplo(c), exemplo: true }));
+export const CURSOS: Curso[] = BASE.map(c => ({ ...c, uuid: c.id, modulos: modulosExemplo(c), exemplo: true }));
 
 export const PACOTES: Pacote[] = [
   { id: 'autocuidado', titulo: 'Autocuidado completo', descricao: 'Para soltar o corpo em casa: lombar, pescoço e mandíbula.', cursos: ['lombar', 'pescoco', 'bruxismo'], preco: 167 },

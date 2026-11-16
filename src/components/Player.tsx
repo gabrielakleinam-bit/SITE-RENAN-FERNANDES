@@ -1,97 +1,101 @@
 'use client';
-/* Player da aula (portado de docs/prototipo/src/js/04-aula.js).
-   Um único conjunto de controles (play, barra, velocidade, tela cheia) comanda três fontes:
-   - vídeo enviado (<video>; no M3 passa a receber HLS com URL assinada);
-   - YouTube: iframe sem controles e sem cliques (pointer-events:none) sob uma camada da
-     plataforma, comandado pela IFrame API via postMessage. A tela de fim cobre as sugestões
-     do YouTube; nenhum link leva o aluno para fora do site. A marca do YouTube não é escondida;
-   - player simulado (só nos cursos de exemplo, tempo acelerado).
-   Presença: blocos de 5 s assistidos em sequência; conclui com 90% (src/lib/presenca.ts). */
+/* Player da aula. Um único conjunto de controles (play, barra, velocidade, tela cheia) comanda:
+   - vídeo enviado (Bunny, HLS com link assinado; hls.js fora do Safari);
+   - YouTube: iframe sem controles e sem cliques (pointer-events:none) sob uma camada da plataforma,
+     comandado pela IFrame API via postMessage. A tela de fim cobre as sugestões do YouTube; nenhum
+     link leva o aluno para fora do site. A marca do YouTube não é escondida.
+   Presença: o navegador marca os blocos para mostrar na hora; o servidor (/api/progresso) decide a conclusão. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from './App';
 import { fmtClock } from '@/lib/duracao';
-import { BLOCO_SEG, concluida, marcar, novaPresenca, percentual } from '@/lib/presenca';
-import type { Aula } from '@/lib/tipos';
+import { BLOCO_SEG, marcar, novaPresenca, percentual } from '@/lib/presenca';
 
 const RATES = [0.75, 1, 1.25, 1.5, 2];
-type Tipo = 'sim' | 'file' | 'yt' | 'panel';
-
-export const ytId = (u?: string) => {
-  const m = String(u || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/);
-  return m ? m[1] : '';
-};
+export type Midia = { tipo: 'hls'; url: string } | { tipo: 'yt'; id: string };
 
 const PlayIco = () => <svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff" /></svg>;
 const PauseIco = () => <svg width="26" height="26" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#fff" /><rect x="14" y="5" width="4" height="14" rx="1" fill="#fff" /></svg>;
 
-export function Player({ aula, exemplo, jaConcluida, onConcluir, onProxima }: {
-  aula: Aula; exemplo: boolean; jaConcluida: boolean;
-  onConcluir: () => void; onProxima: (() => void) | null;
+export function Player({ midia, titulo, duracao, blocosIniciais, jaConcluida, registrar, onConcluir, onProxima, rotuloProxima }: {
+  midia: Midia; titulo: string; duracao: number; blocosIniciais: string; jaConcluida: boolean;
+  registrar: (pos: number, evento: 'tick' | 'seek') => Promise<{ concluida?: boolean; blocos?: string } | null>;
+  onConcluir: () => void; onProxima: (() => void) | null; rotuloProxima?: string;
 }) {
   const { toast } = useApp();
-  const yt = aula.tipo === 'video' && aula.videoFonte === 'youtube' ? ytId(aula.videoRef) : '';
-  const tipoInicial: Tipo =
-    aula.tipo === 'texto' || aula.tipo === 'material' ? 'panel'
-      : yt ? 'yt'
-        : aula.videoRef ? 'file'
-          : exemplo ? 'sim' : 'panel';
-
-  const [tipo, setTipo] = useState<Tipo>(tipoInicial);
   const [, setTick] = useState(0);
   const repinta = useCallback(() => setTick(t => t + 1), []);
-  const st = useRef({
-    dur: Math.max(1, aula.duracaoSeg || 300), pos: 0, rate: 1, playing: false, lastT: 0,
-    blocos: novaPresenca(aula.duracaoSeg || 300), done: jaConcluida, fim: false, buf: true, ytOuviu: false, ytBloqueado: false,
-  });
+  const st = useRef((() => {
+    const b = novaPresenca(duracao || 300);
+    for (let i = 0; i < Math.min(b.length, blocosIniciais.length); i++) if (blocosIniciais[i] === '1') b[i] = 1;
+    return { dur: Math.max(1, duracao || 300), pos: 0, rate: 1, playing: false, lastT: 0, blocos: b, done: jaConcluida, fim: false, buf: true, falhou: false, ultimoEnvio: 0 };
+  })());
   const s = st.current;
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const simT = useRef<ReturnType<typeof setInterval> | null>(null);
-  const concluirRef = useRef(onConcluir); concluirRef.current = onConcluir;
+  const cb = useRef({ registrar, onConcluir }); cb.current = { registrar, onConcluir };
 
-  const reset = useCallback((dur: number) => {
-    s.dur = Math.max(1, dur); s.pos = 0; s.lastT = 0; s.blocos = novaPresenca(s.dur);
-  }, [s]);
-
-  const checar = useCallback(() => {
-    if (!s.done && concluida(s.blocos)) { s.done = true; toast('Aula concluída.'); concluirRef.current(); }
-  }, [s, toast]);
+  const enviar = useCallback(async (evento: 'tick' | 'seek') => {
+    s.ultimoEnvio = Date.now();
+    const r = await cb.current.registrar(s.pos, evento);
+    if (!r) return;
+    if (r.blocos) for (let i = 0; i < Math.min(s.blocos.length, r.blocos.length); i++) if (r.blocos[i] === '1') s.blocos[i] = 1;
+    if (r.concluida && !s.done) { s.done = true; toast('Aula concluída.'); cb.current.onConcluir(); }
+    repinta();
+  }, [s, toast, repinta]);
 
   const onTime = useCallback((t: number) => {
     s.lastT = marcar(s.blocos, s.lastT, t, s.dur);
     s.pos = Math.min(t, s.dur);
-    checar(); repinta();
-  }, [s, checar, repinta]);
+    if (s.playing && Date.now() - s.ultimoEnvio >= 5000) void enviar('tick');
+    repinta();
+  }, [s, enviar, repinta]);
 
-  const parar = useCallback(() => { if (simT.current) clearInterval(simT.current); simT.current = null; }, []);
+  const onEnded = useCallback(() => { s.playing = false; s.fim = true; void enviar('tick'); repinta(); }, [s, enviar, repinta]);
 
-  const onEnded = useCallback(() => { s.playing = false; parar(); s.fim = true; repinta(); }, [s, parar, repinta]);
+  /* ---------- HLS ---------- */
+  useEffect(() => {
+    if (midia.tipo !== 'hls') return;
+    const v = videoRef.current!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let hls: any = null;
+    if (v.canPlayType('application/vnd.apple.mpegurl')) v.src = midia.url;
+    else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (!Hls.isSupported()) { v.src = midia.url; return; }
+        hls = new Hls({ maxBufferLength: 30 });
+        hls.loadSource(midia.url);
+        hls.attachMedia(v);
+        hls.on(Hls.Events.ERROR, (_: unknown, d: { fatal?: boolean }) => { if (d.fatal) { s.falhou = true; s.buf = false; repinta(); } });
+      });
+    }
+    return () => { hls?.destroy(); };
+  }, [midia, s, repinta]);
 
   /* ---------- YouTube (IFrame API por postMessage) ---------- */
   const ytSend = useCallback((msg: object) => {
-    try { frameRef.current?.contentWindow?.postMessage(JSON.stringify(msg), '*'); } catch { /* iframe indisponível */ }
+    try { frameRef.current?.contentWindow?.postMessage(JSON.stringify(msg), '*'); } catch { /* */ }
   }, []);
   const ytCmd = useCallback((func: string, args: unknown[] = []) => ytSend({ event: 'command', func, args, id: 1, channel: 'widget' }), [ytSend]);
-
   useEffect(() => {
-    if (tipo !== 'yt') return;
-    let poll: ReturnType<typeof setInterval> | null = null;
+    if (midia.tipo !== 'yt') return;
+    let poll: ReturnType<typeof setInterval> | null = null, ouviu = false;
     const f = frameRef.current;
     const onLoad = () => { if (poll) clearInterval(poll); poll = setInterval(() => ytSend({ event: 'listening', id: 1, channel: 'widget' }), 500); };
     f?.addEventListener('load', onLoad);
-    const espera = setTimeout(() => { if (!s.ytOuviu) { s.ytBloqueado = true; s.buf = false; setTipo('panel'); } }, 8000);
+    const espera = setTimeout(() => { if (!ouviu) { s.falhou = true; s.buf = false; repinta(); } }, 10000);
     const onMsg = (e: MessageEvent) => {
       if (!/youtube/.test(e.origin)) return;
-      let d: { event?: string; info?: { duration?: number; playerState?: number; currentTime?: number } };
+      let d: { event?: string; info?: { playerState?: number; currentTime?: number } };
       try { d = JSON.parse(e.data); } catch { return; }
-      if (d.event === 'onError') { s.ytBloqueado = true; setTipo('panel'); return; }
+      if (d.event === 'onError') { s.falhou = true; repinta(); return; }
       if (!d.info) return;
-      if (!s.ytOuviu) { s.ytOuviu = true; s.buf = false; if (poll) { clearInterval(poll); poll = null; } }
-      if (d.info.duration && Math.abs(d.info.duration - s.dur) > 1 && !s.blocos.some(Boolean)) reset(d.info.duration);
+      if (!ouviu) { ouviu = true; s.buf = false; if (poll) { clearInterval(poll); poll = null; } }
       if (typeof d.info.playerState === 'number') {
-        s.playing = d.info.playerState === 1;
+        const tocando = d.info.playerState === 1;
+        if (tocando && !s.playing) void enviar('seek');
+        s.playing = tocando;
         s.buf = d.info.playerState === 3;
         if (d.info.playerState === 0) onEnded();
       }
@@ -99,127 +103,86 @@ export function Player({ aula, exemplo, jaConcluida, onConcluir, onProxima }: {
     };
     window.addEventListener('message', onMsg);
     return () => { f?.removeEventListener('load', onLoad); window.removeEventListener('message', onMsg); if (poll) clearInterval(poll); clearTimeout(espera); };
-  }, [tipo, s, ytSend, reset, onEnded, onTime, repinta]);
+  }, [midia, s, ytSend, onEnded, onTime, enviar, repinta]);
 
-  /* ---------- carregamento inicial ---------- */
-  useEffect(() => {
-    if (tipo === 'sim' || tipo === 'panel') { const t = setTimeout(() => { s.buf = false; repinta(); }, 500); return () => clearTimeout(t); }
-  }, [tipo, s, repinta]);
-  useEffect(() => () => parar(), [parar]);
-
-  /* ---------- comandos (mesmos botões para as três fontes) ---------- */
+  /* ---------- comandos ---------- */
   const play = () => {
-    if (tipo === 'panel') return;
     s.fim = false;
-    if (tipo === 'file') { void videoRef.current?.play(); return; }
-    if (tipo === 'yt') { ytCmd('playVideo'); s.playing = true; repinta(); return; }
-    if (s.playing) return;
-    if (s.pos >= s.dur) { s.pos = 0; s.lastT = 0; }
-    s.playing = true;
-    simT.current = setInterval(() => {
-      const t = Math.min(s.dur, s.pos + s.rate * 1.2);
-      onTime(t);
-      if (t >= s.dur) onEnded();
-    }, 100);
-    repinta();
+    if (midia.tipo === 'hls') { void videoRef.current?.play(); return; }
+    ytCmd('playVideo'); s.playing = true; repinta();
   };
   const pause = () => {
-    if (tipo === 'file') { videoRef.current?.pause(); return; }
-    if (tipo === 'yt') ytCmd('pauseVideo');
-    s.playing = false; parar(); repinta();
+    if (midia.tipo === 'hls') { videoRef.current?.pause(); return; }
+    ytCmd('pauseVideo'); s.playing = false; repinta();
   };
   const seek = (t: number) => {
     t = Math.max(0, Math.min(s.dur, t)); s.lastT = t; s.pos = t;
-    if (tipo === 'file' && videoRef.current) videoRef.current.currentTime = t;
-    if (tipo === 'yt') ytCmd('seekTo', [t, true]);
+    if (midia.tipo === 'hls' && videoRef.current) videoRef.current.currentTime = t;
+    if (midia.tipo === 'yt') ytCmd('seekTo', [t, true]);
+    void enviar('seek');
     repinta();
   };
   const velocidade = () => {
     const r = RATES[(RATES.indexOf(s.rate) + 1) % RATES.length]; s.rate = r;
-    if (tipo === 'file' && videoRef.current) videoRef.current.playbackRate = r;
-    if (tipo === 'yt') ytCmd('setPlaybackRate', [r]);
+    if (midia.tipo === 'hls' && videoRef.current) videoRef.current.playbackRate = r;
+    if (midia.tipo === 'yt') ytCmd('setPlaybackRate', [r]);
     repinta();
   };
   const telaCheia = () => {
     const el = playerRef.current;
+    const v = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     try {
       if (document.fullscreenElement) void document.exitFullscreen();
-      else el?.requestFullscreen().catch(() => toast('Tela cheia indisponível neste navegador.'));
+      else if (el?.requestFullscreen) el.requestFullscreen().catch(() => v?.webkitEnterFullscreen?.());
+      else v?.webkitEnterFullscreen?.(); // iPhone
     } catch { toast('Tela cheia indisponível neste navegador.'); }
   };
-  const marcarLido = () => { s.blocos.fill(1); checar(); repinta(); };
 
   const arrasto = useRef(false);
   const seekDe = (x: number) => { const r = trackRef.current!.getBoundingClientRect(); seek(((x - r.left) / r.width) * s.dur); };
 
-  /* ---------- palco ---------- */
-  let palco: React.ReactNode = null;
-  let modo: 'sim' | 'media' | 'panel' = 'sim';
-  if (tipo === 'panel') {
-    modo = 'panel';
-    palco = aula.tipo === 'texto' ? (
-      <div className="rv-text"><h3>{aula.titulo}</h3>
-        <p style={{ whiteSpace: 'pre-line' }}>{aula.texto || 'Texto da aula.'}</p>
-        <button className="btn btn-oleo" onClick={marcarLido}>Concluí a leitura</button></div>
-    ) : aula.tipo === 'material' ? (
-      <div className="rv-text"><h3>{aula.titulo}</h3><p>Material de apoio.</p>
-        <div className="acts">
-          {aula.materialUrl && <a className="btn btn-oleo" href={aula.materialUrl} target="_blank" rel="noopener">Abrir material</a>}
-          <button className="btn btn-ghost" style={{ color: '#fff' }} onClick={marcarLido}>Marcar como visto</button>
-        </div></div>
-    ) : s.ytBloqueado ? (
-      <div className="rv-text"><h3>O vídeo não carregou</h3>
-        <p>Não foi possível abrir o vídeo desta aula agora. Verifique a conexão e tente de novo.</p>
-        <div className="acts"><button className="btn btn-oleo" onClick={() => { s.ytBloqueado = false; s.ytOuviu = false; s.buf = true; setTipo('yt'); }}>Tentar de novo</button></div></div>
-    ) : (
-      <div className="rv-text"><h3>Em breve</h3><p>O vídeo desta aula ainda está sendo preparado.</p></div>
-    );
-  } else if (tipo === 'yt') {
-    modo = 'media';
-    const origin = typeof location !== 'undefined' ? '&origin=' + encodeURIComponent(location.origin) : '';
-    palco = <>
-      <iframe ref={frameRef} className="yt" title={aula.titulo} tabIndex={-1} referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media"
-        src={`https://www.youtube-nocookie.com/embed/${yt}?enablejsapi=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1${origin}`} />
-      <button className="shield" aria-label="Reproduzir ou pausar" onClick={() => (s.playing ? pause() : play())} />
-    </>;
-  } else if (tipo === 'file') {
-    modo = 'media';
-    palco = <>
-      <video ref={videoRef} playsInline preload="metadata" src={aula.videoRef}
-        onLoadedMetadata={e => { reset(e.currentTarget.duration); s.buf = false; repinta(); }}
-        onTimeUpdate={e => onTime(e.currentTarget.currentTime)}
-        onPlay={() => { s.playing = true; repinta(); }} onPause={() => { s.playing = false; repinta(); }}
-        onEnded={onEnded} onWaiting={() => { s.buf = true; repinta(); }} onPlaying={() => { s.buf = false; repinta(); }}
-        onError={() => { s.buf = false; toast('Este navegador não abriu o vídeo.'); }} />
-      <button className="shield" aria-label="Reproduzir ou pausar" onClick={() => (s.playing ? pause() : play())} />
-    </>;
-  }
-
   const n = s.blocos.length, pct = percentual(s.blocos), atual = Math.min(n - 1, Math.floor(s.pos / BLOCO_SEG));
   const vistos: [number, number][] = [];
   for (let i = 0; i < n;) { if (s.blocos[i]) { let j = i; while (j < n && s.blocos[j]) j++; vistos.push([i, j]); i = j; } else i++; }
+  const origin = typeof location !== 'undefined' ? '&origin=' + encodeURIComponent(location.origin) : '';
 
   return (
-    <div id="playerWrap" data-mode={modo}>
+    <div id="playerWrap" data-mode={s.falhou ? 'panel' : 'media'}>
       <div className="player" ref={playerRef}>
         <div className="screenbox">
           <div className={'buf' + (s.buf ? ' on' : '')} aria-hidden="true"><i /></div>
-          {palco && <div className="stage">{palco}</div>}
+          <div className="stage">
+            {s.falhou ? (
+              <div className="rv-text"><h3>O vídeo não carregou</h3><p>Verifique a conexão e recarregue a página. Se continuar, avise a equipe pelas Dúvidas.</p></div>
+            ) : midia.tipo === 'yt' ? <>
+              <iframe ref={frameRef} className="yt" title={titulo} tabIndex={-1} referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media"
+                src={`https://www.youtube-nocookie.com/embed/${midia.id}?enablejsapi=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1${origin}`} />
+              <button className="shield" aria-label="Reproduzir ou pausar" onClick={() => (s.playing ? pause() : play())} />
+            </> : <>
+              <video ref={videoRef} playsInline preload="metadata" controlsList="nodownload" onContextMenu={e => e.preventDefault()}
+                onLoadedMetadata={e => { const d = e.currentTarget.duration; if (isFinite(d) && Math.abs(d - s.dur) > 2 && !s.blocos.some(Boolean)) { s.dur = d; s.blocos = novaPresenca(d); } s.buf = false; repinta(); }}
+                onTimeUpdate={e => onTime(e.currentTarget.currentTime)}
+                onPlay={() => { s.playing = true; void enviar('seek'); repinta(); }} onPause={() => { s.playing = false; repinta(); }}
+                onEnded={onEnded} onWaiting={() => { s.buf = true; repinta(); }} onPlaying={() => { s.buf = false; repinta(); }} />
+              <button className="shield" aria-label="Reproduzir ou pausar" onClick={() => (s.playing ? pause() : play())} />
+            </>}
+          </div>
           {s.fim && (
             <div className="end-card">
               <b>{s.done ? 'Aula concluída' : 'Fim do vídeo'}</b>
               <span>{s.done ? 'Ela já conta no seu progresso.' : 'Alguns trechos foram pulados e ainda não contam.'}</span>
               <div className="acts">
-                {onProxima && <button className="btn btn-oleo" onClick={onProxima}>Próxima aula</button>}
+                {onProxima && <button className="btn btn-oleo" onClick={onProxima}>{rotuloProxima || 'Próxima aula'}</button>}
                 <button className="btn btn-ghost" style={{ color: '#fff' }} onClick={() => { s.fim = false; seek(0); play(); }}>Assistir de novo</button>
               </div>
             </div>
           )}
-          <span className="demo-note">Demonstração em tempo acelerado</span>
-          <button className="bigplay" aria-label="Reproduzir" onClick={play} style={{ display: s.playing || tipo === 'panel' ? 'none' : 'grid' }}>
-            <svg width="30" height="30" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#12161B" /></svg>
-          </button>
-          <div className="ttl">{aula.titulo}</div>
+          {!s.falhou && (
+            <button className="bigplay" aria-label="Reproduzir" onClick={play} style={{ display: s.playing ? 'none' : 'grid' }}>
+              <svg width="30" height="30" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#12161B" /></svg>
+            </button>
+          )}
+          {!s.playing && <div className="ttl">{titulo}</div>}
         </div>
         <div className="controls">
           <button className="ico" aria-label={s.playing ? 'Pausar' : 'Reproduzir'} onClick={() => (s.playing ? pause() : play())}>{s.playing ? <PauseIco /> : <PlayIco />}</button>

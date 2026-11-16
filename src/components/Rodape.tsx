@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 /* Rodapé: só o logo e o aviso legal (as redes ficam no bloco "Quem ensina"). */
 export function Rodape() {
   return (
@@ -8,7 +10,7 @@ export function Rodape() {
       </div>
       <p className="foot">
         Cursos livres: não habilitam como técnico em massoterapia e não substituem avaliação médica ou fisioterapêutica.
-        Nesta versão de demonstração, cursos, preços, números de alunos e conversas são ilustrativos.
+        {' '}<Link href="/termos">Termos de Uso</Link> · <Link href="/privacidade">Privacidade</Link> · <Link href="/validar">Validar certificado</Link>
       </p>
     </>
   );

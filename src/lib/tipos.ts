@@ -12,11 +12,16 @@ export interface Aula {
   duracaoSeg?: number;
   /** Rótulo livre para testes ("8 questões"). */
   rotulo?: string;
-  videoFonte?: 'upload' | 'youtube';
-  videoRef?: string;     // URL do HLS/arquivo ou link do YouTube
+  videoFonte?: 'bunny' | 'youtube' | null;
+  videoRef?: string;     // conteúdo protegido: só preenchido para quem pode assistir
+  videoStatus?: 'enviando' | 'processando' | 'pronto' | 'erro' | null;
   texto?: string;
   materialUrl?: string;
+  materialPath?: string | null;
+  questoes?: Questao[] | null;
 }
+
+export interface Questao { pergunta: string; opcoes: string[]; correta: number }
 
 export interface Modulo {
   id: string;
@@ -26,6 +31,9 @@ export interface Modulo {
 
 export interface Curso {
   id: string;            // slug, usado na URL
+  uuid: string;          // id no banco
+  publicado?: boolean;
+  arquivado?: boolean;
   titulo: string;
   formacao: Formacao;
   professor: string;
@@ -47,6 +55,7 @@ export interface Curso {
 
 export interface Pacote {
   id: string;
+  ativo?: boolean;
   titulo: string;
   descricao: string;
   cursos: string[];

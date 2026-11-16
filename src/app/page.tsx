@@ -10,7 +10,7 @@ import { Rodape } from '@/components/Rodape';
 
 export default async function Inicio() {
   const cursos = await listarCursos();
-  const pacotes = await listarPacotes();
+  const pacotes = (await listarPacotes()).filter(p => p.cursos.length > 1 && p.cursos.every(id => cursos.some(c => c.id === id)));
   const itens = cursos.map(curso => { const s = statsCurso(curso); return { curso, aulas: s.aulas, sec: s.sec }; });
 
   return (
@@ -39,22 +39,29 @@ export default async function Inicio() {
       </div>
 
       <div className="wrap">
-        <div className="section" id="destaques">
-          <div className="section-head"><h2>Em destaque</h2></div>
-          <Carrossel itens={itens} />
-        </div>
+        {itens.length > 0 ? <>
+          <div className="section" id="destaques">
+            <div className="section-head"><h2>Em destaque</h2></div>
+            <Carrossel itens={itens} />
+          </div>
+          <div className="section" id="catalogSection">
+            <div className="section-head"><h2>Cursos</h2></div>
+            <Catalogo itens={itens} />
+          </div>
+        </> : (
+          <div className="section" id="catalogSection">
+            <div className="section-head"><h2>Cursos</h2></div>
+            <div className="panel"><h2>Os primeiros cursos estão sendo gravados</h2><p className="sub">Enquanto isso, faça o diagnóstico gratuito para saber por onde começar.</p><Link className="btn btn-oleo" href="/diagnostico">Fazer diagnóstico grátis</Link></div>
+          </div>
+        )}
 
-        <div className="section" id="catalogSection">
-          <div className="section-head"><h2>Cursos</h2></div>
-          <Catalogo itens={itens} />
-        </div>
-
-        <div className="section" id="pacotes">
+        {pacotes.length > 0 && <div className="section" id="pacotes">
           <div className="section-head"><h2>Pacotes com desconto</h2></div>
           <div className="packs">
             {pacotes.map(p => {
               const cheio = precoCheioPacote(p, cursos);
               const cs = p.cursos.map(id => cursos.find(c => c.id === id)!);
+              if (!cheio) return null;
               return (
                 <article className="pack" key={p.id}>
                   <div className="pack-art">
@@ -67,14 +74,14 @@ export default async function Inicio() {
                     <ul>{cs.map(c => <li key={c.id}>{c.titulo}</li>)}</ul>
                     <div className="pack-f">
                       <div><s>{brl(cheio)}</s><b>{brl(p.preco)}</b><small>{p.cursos.length} cursos · {fmtTotal(segPacote(p, cursos))}</small></div>
-                      <BotaoComprar className="btn btn-anil" rotulo="Quero o pacote" titulo={`Pacote ${p.titulo}`} />
+                      <BotaoComprar className="btn btn-anil" rotulo="Quero o pacote" pacote={p.id} />
                     </div>
                   </div>
                 </article>
               );
             })}
           </div>
-        </div>
+        </div>}
 
         <div className="section">
           <div className="section-head"><h2>Como funciona</h2></div>

@@ -52,3 +52,35 @@ test('pacotes iniciais têm os preços do briefing', () => {
   assert.equal(p.costas.preco, 127);      assert.equal(cheio('costas'), 154);
   assert.equal(p.formacao.preco, 797);    assert.equal(cheio('formacao'), 1041);
 });
+
+import { crc16, payloadPix } from './pix.ts';
+test('CRC16 do Pix confere com o valor de referência', () => {
+  assert.equal(crc16('123456789'), '29B1'); // CRC-16/CCITT-FALSE
+  const p = payloadPix({ chave: 'renan@exemplo.com', nome: 'Renan Fernandes', cidade: 'Curitiba', valor: 87, txid: 'RF123' });
+  assert.ok(p.startsWith('000201'));
+  assert.ok(p.includes('540587.00'));
+  assert.equal(p.slice(-4), crc16(p.slice(0, -4)));
+});
+
+import { aplicarTick } from './presenca-servidor.ts';
+test('servidor: avanço contínuo em tempo real conta; salto não conta', () => {
+  let e = { blocos: '', ultima: 0, atualizado: 0 }, t = 0;
+  for (let pos = 5; pos <= 100; pos += 5) { t += 5000; e = { ...aplicarTick(e, pos, t, 100, 'tick') }; }
+  assert.equal(aplicarTick(e, 100, t, 100, 'seek').pct, 100);
+  const f = aplicarTick({ blocos: '', ultima: 0, atualizado: 0 }, 95, 1000, 100, 'tick'); // pulou 95 s em 1 s
+  assert.equal(f.pct, 0);
+});
+test('servidor: não aceita avançar mais rápido que 2x', () => {
+  const r = aplicarTick({ blocos: '', ultima: 0, atualizado: 0 }, 30, 5000, 100, 'tick'); // 30 s em 5 s
+  assert.equal(r.pct, 0);
+  const ok = aplicarTick({ blocos: '', ultima: 0, atualizado: 0 }, 10, 5000, 100, 'tick'); // 2x
+  assert.ok(ok.pct > 0);
+});
+
+import { pontuar } from './diagnostico.ts';
+test('diagnóstico: lombar + sentado indica o curso de lombar primeiro, com o motivo', () => {
+  const r = pontuar({ perfil: 'eu', regiao: ['lombar'], freq: 'dia', rotina: 'sentado', conhece: 'pouco' }, CURSOS.map(c => ({ id: c.id, formacao: c.formacao })));
+  assert.equal(r.ranking[0].id, 'lombar');
+  assert.ok(r.ranking[0].why.includes('você marcou a lombar') && r.ranking[0].why.includes('passa muitas horas sentado'));
+  assert.ok(!r.ranking.some(x => x.id === 'ventosa'));
+});

@@ -1,48 +1,59 @@
 # Renan Fernandes Cursos
 
-Plataforma de cursos de massoterapia do Renan Fernandes. Next.js (App Router) + TypeScript.
-O protótipo navegável que serve de especificação está em `docs/prototipo/` (leia `HANDOFF.md` e `PROMPT_CLAUDE_CODE.md`).
+Plataforma de cursos de massoterapia do Renan Fernandes. Next.js (App Router) + TypeScript + Supabase + Bunny Stream.
+O protótipo navegável que serve de especificação está em `docs/prototipo/`.
+
+**Para colocar no ar, siga [docs/CONFIGURACAO.md](docs/CONFIGURACAO.md).**
 
 ## Rodar
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
-npm test           # regras de presença, duração e pacotes
+cp .env.example .env.local   # preencha as chaves
+npm run dev                  # http://localhost:3000
+npm test                     # presença, duração, Pix, diagnóstico
 npm run build
 ```
 
-Hospedagem: Vercel (plano Hobby por enquanto). Importe o repositório na Vercel; não há variáveis de ambiente no M1.
+Sem as variáveis do Supabase o site abre, mostra um aviso de configuração e o catálogo fica vazio.
+
+## O que tem
+
+**Aluno**: início (carrossel, catálogo, pacotes), página do curso, compra por Pix com conferência manual, aula com menu lateral,
+player próprio (vídeo enviado em HLS com link assinado, ou YouTube sem sair do site), presença de 90% registrada no servidor,
+testes por módulo, diagnóstico com recomendação, dúvidas com o professor, certificado com PDF e validação pública,
+conta com exportação e exclusão de dados (LGPD).
+
+**Administrador** (`/admin`): Visão, Alunos, Acessos (liberar entrada), Certificados (fila e modelo), Dúvidas e Cursos,
+com o editor em 3 etapas: upload de vídeo direto do celular (retomável), link do YouTube, duração automática,
+sugestão de texto com IA e checklist para publicar. Pacotes com desconto.
 
 ## Estrutura
 
 ```
-src/app/                   rotas
-  page.tsx                 início: hero, carrossel, catálogo, pacotes, como funciona, quem ensina
-  cursos/[slug]/           página do curso
-  cursos/[slug]/aula/      aula com menu lateral (/cursos/lombar/aula/m1-a2)
-  diagnostico/, duvidas/   entram no M5
-  globals.css              estilos portados do protótipo
-src/components/            App (sessão e avisos), Shell (topo, navegação, login), Inicio, Curso, SalaDeAula, Player
+supabase/migrations/       esquema do banco (rodar no SQL Editor)
+src/app/                   páginas e rotas de API
+  admin/                   painel (protegido no servidor)
+  api/admin/videos/        envio para a Bunny (assinatura TUS, conclusão, status)
+  api/progresso/           presença na aula
+  api/certificados/        PDF
+src/components/            telas (Editor e EnvioVideo em components/admin)
 src/lib/
-  tipos.ts                 tipos do domínio
-  dados.ts                 dados de exemplo (somem no M2)
-  catalogo.ts              acesso aos dados: as páginas só usam estas funções
-  duracao.ts               regra única de duração (vídeos + 4 min por texto)
-  presenca.ts              presença por blocos de 5 s, conclui com 90%
-  capa.ts, teia.ts         capas ilustradas e gráfico de teia (SVG)
+  catalogo.ts              leitura do catálogo (o conteúdo das aulas só sai após conferir o acesso)
+  sessao.ts, aluno.ts      usuário logado, papel (vem do banco) e regra de acesso
+  bunny.ts                 Bunny Stream (criar vídeo, assinar envio, link assinado HLS)
+  presenca*.ts             regra de presença (navegador e servidor)
+  duracao.ts               duração = soma dos vídeos + 4 min por aula de texto
+  pix.ts                   Pix copia e cola (BR Code)
+  diagnostico.ts           perguntas e pontuação
+  pdf-certificado.ts       PDF do certificado
 ```
 
-## Marcos
+## Regras de negócio
 
-- [x] **M1** layout do aluno com dados de exemplo (início, curso, aula com menu lateral e presença)
-- [ ] **M2** Supabase (login, perfis) e editor de treinamento
-- [ ] **M3** streaming, presença no servidor, matrícula, pedidos e liberação de entrada
-- [ ] **M4** painel Visão e Alunos
-- [ ] **M5** diagnóstico, dúvidas e certificados
-
-### Contas de demonstração (M1, qualquer senha)
-
-- `cliente@teste.com`: compra aguardando liberação (lombar)
-- `ana@exemplo.com.br`: aluna com o curso de lombar
-- `admin@teste.com`: administração (painel nos próximos marcos)
+1. Pagar cria um pedido "aguardando"; a aula só abre depois de "Liberar entrada". Pacote libera todos os cursos dele.
+2. A primeira aula de cada curso é grátis.
+3. Presença: blocos de 5 s assistidos em sequência; conclui com 90%. O servidor recusa saltos e avanço acima de 2x.
+4. Duração nunca é digitada: vem da Bunny ou do YouTube.
+5. Certificado: o aluno pede com 100%; o admin aprova e o código de validação é gerado.
+6. Papel de admin vem da tabela `admins_autorizados`.

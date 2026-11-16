@@ -12,7 +12,7 @@ export interface CursoResumo { curso: Curso; aulas: number; sec: number }
 /* ---------- carrossel: um slide por curso, com o diagnóstico na 2ª posição ----------
    Troca a cada 7 s, pausa com mouse em cima ou foco, setas, bolinhas e arrastar no celular. */
 export function Carrossel({ itens }: { itens: CursoResumo[] }) {
-  const { tem, feitas } = useApp();
+  const { tem, feitas, admin } = useApp();
   const slides: (CursoResumo | 'diag')[] = [...itens];
   slides.splice(Math.min(1, slides.length), 0, 'diag');
   const n = slides.length;
@@ -57,7 +57,7 @@ export function Carrossel({ itens }: { itens: CursoResumo[] }) {
                 </div>
               </article>
             );
-            const c = it.curso, meu = tem(c.id), p = meu ? Math.min(100, Math.round((feitas(c.id) / Math.max(1, it.aulas)) * 100)) : null;
+            const c = it.curso, meu = tem(c.id) && !admin, p = meu ? Math.min(100, Math.round((feitas(c.id) / Math.max(1, it.aulas)) * 100)) : null;
             return (
               <article className="slide" key={c.id} {...lab}>
                 <div className="s-vis"><Capa curso={c} className="s-cover" k="s" /></div>
@@ -123,13 +123,7 @@ export function Catalogo({ itens }: { itens: CursoResumo[] }) {
   );
 }
 
-/* ---------- botão de compra (curso ou pacote) ----------
-   M1: pede login e avisa que o checkout chega no M3 (pedido "aguardando" + liberação manual). */
-export function BotaoComprar({ rotulo, className, titulo }: { rotulo: string; className: string; titulo: string }) {
-  const { usuario, abrirLogin, toast } = useApp();
-  const aviso = () => toast(`Compra de "${titulo}": o pagamento (Pix, cartão e boleto) entra no M3.`);
-  return <button className={className} onClick={() => (usuario ? aviso() : abrirLogin(aviso))}>{rotulo}</button>;
-}
+export { BotaoComprar } from './Compra';
 
 export function VerCursos() {
   return (

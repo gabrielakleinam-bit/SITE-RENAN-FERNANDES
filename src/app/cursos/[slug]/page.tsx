@@ -1,26 +1,26 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { buscarCurso, listarCursos } from '@/lib/catalogo';
+import { buscarCurso } from '@/lib/catalogo';
+import { usuarioAtual } from '@/lib/sessao';
+import { db } from '@/lib/supabase/servidor';
 import { fmtTotal, statsCurso } from '@/lib/duracao';
 import { Teia } from '@/components/Teia';
 import { ListaModulos, QuadroCompra } from '@/components/Curso';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  return (await listarCursos()).map(c => ({ slug: c.id }));
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const c = await buscarCurso((await params).slug);
+  const c = await buscarCurso((await params).slug, { rascunho: true });
   return c ? { title: c.titulo, description: c.resumo } : {};
 }
 
 export default async function PaginaCurso({ params }: Props) {
-  const c = await buscarCurso((await params).slug);
+  const u = await usuarioAtual();
+  const c = await buscarCurso((await params).slug, { rascunho: u?.papel === 'admin' });
   if (!c) notFound();
   const s = statsCurso(c);
+  const { data: cert } = u ? await db().from('certificados').select('status, codigo').eq('usuario_id', u.id).eq('curso_id', c.uuid).maybeSingle() : { data: null };
 
   return (
     <>
@@ -36,7 +36,6 @@ export default async function PaginaCurso({ params }: Props) {
             <div className="facts">
               <span>{fmtTotal(s.sec)} de vídeo</span>
               <span>{s.aulas} aulas</span>
-              {c.nota && <><span>Nota {c.nota.toFixed(1).replace('.', ',')}</span><span>{c.alunos?.toLocaleString('pt-BR')} alunos</span></>}
               <span>Certificado de curso livre</span>
             </div>
             <div className="c-about">
@@ -46,13 +45,13 @@ export default async function PaginaCurso({ params }: Props) {
               <p className="aviso-saude">Conteúdo educativo. Este curso não substitui avaliação médica ou fisioterapêutica; em caso de dor forte, persistente ou que irradia, procure um profissional de saúde.</p>
             </div>
           </div>
-          <QuadroCompra curso={c} />
+          <QuadroCompra curso={c} aulas={s.aulas} cert={cert} />
         </div>
       </div>
       <div className="wrap two">
         <div className="panel">
           <h2>Conteúdo do curso</h2>
-          <p className="sub">{c.modulos.length} módulos, testes ao fim de cada um e avaliação final.</p>
+          <p className="sub">{c.modulos.length} módulos{c.modulos.some(m => m.aulas.some(a => a.tipo === 'teste')) ? ', com testes para fixar o conteúdo' : ''}.</p>
           <ListaModulos curso={c} />
         </div>
         <div className="panel">
