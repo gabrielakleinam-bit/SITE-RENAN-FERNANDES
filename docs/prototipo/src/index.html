@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Renan Fernandes Cursos</title>
+<!-- Protótipo navegável. Gerado por build.py a partir de src/. Não edite o arquivo gerado: edite src/ e rode o build. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+/*@@CSS@@*/
+</style>
+</head>
+<body>
+<div id="splash" role="status" aria-label="Carregando"><div class="sp"><img data-asset="logoCor" alt="Renan Fernandes Massoterapia"><div class="bar"><i></i></div></div></div>
+
+<header class="top">
+  <button class="logo" data-go="inicio" aria-label="Renan Fernandes Massoterapia, ir para o início"><img class="logo-img" src="@@ASSET:logo-clara.webp@@" alt="Renan Fernandes Massoterapia"></button>
+  <div class="top-search" role="search">Buscar cursos, técnicas ou regiões do corpo</div>
+  <div class="spacer"></div>
+  <div id="authArea"></div>
+  <div class="menu" id="userMenu" role="menu">
+    <div class="who"><strong id="whoName">Matheus</strong><span id="whoMail">matheus@exemplo.com.br</span></div>
+    <button role="menuitem" data-go="teia">Minha teia</button>
+    <button role="menuitem" data-go="duvidas">Minhas dúvidas</button>
+    <button role="menuitem" id="logoutBtn">Sair</button>
+    <button role="menuitem" id="logoutAllBtn">Sair de todos os dispositivos</button>
+  </div>
+</header>
+<div id="pvBar" hidden>Pré-visualização como aluno <button data-pv-exit>Voltar ao painel</button></div>
+
+<nav class="nav" id="navAluno" aria-label="Navegação principal">
+  <button data-go="inicio" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Início</button>
+  <button data-go="curso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Curso</button>
+  <button data-go="aula"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>Aula</button>
+  <button data-go="teia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8.6 5v10L12 22l-8.6-5V7z"/><path d="M12 7l4.3 2.5v5L12 17l-4.3-2.5v-5z"/><path d="M12 2v20M3.4 7l17.2 10M20.6 7L3.4 17"/></svg>Teia</button>
+  <button data-go="duvidas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Dúvidas</button>
+</nav>
+<nav class="nav" id="navAdmin" aria-label="Navegação do administrador" hidden>
+  <button data-go="adm-visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Visão</button>
+  <button data-go="adm-alunos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-4-6.3"/></svg>Alunos</button>
+  <button data-go="adm-acessos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Acessos</button>
+  <button data-go="adm-certificados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M9 14.5 7.5 22 12 19.5 16.5 22 15 14.5"/></svg>Certificados</button>
+  <button data-go="adm-perguntas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Dúvidas</button>
+  <button data-go="adm-cursos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Cursos</button>
+</nav>
+
+<main>
+  <!-- INICIO -->
+  <section class="screen active" id="s-inicio">
+    <div class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <h1>Aprenda a cuidar do corpo com quem já fez mais de 17 mil atendimentos.</h1>
+          <p class="lead">12 anos de massoterapia em Curitiba, agora em aulas em vídeo: autocuidado para quem convive com tensão no dia a dia e formação para terapeutas. Antes da primeira aula, um diagnóstico de 5 minutos desenha a teia do que você já sabe. No fim, a mesma teia mostra o quanto evoluiu.</p>
+          <div class="ctas">
+            <button class="btn btn-oleo" data-go="teia">Fazer diagnóstico grátis</button>
+            <button class="btn btn-ghost" id="seeCourses">Ver cursos</button>
+          </div>
+        </div>
+        <div>
+          <div class="hero-web" id="heroWeb"></div>
+          <div class="legend"><span><i style="background:var(--lavanda)"></i>Antes do curso</span><span><i style="background:var(--oleo)"></i>Depois do curso</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="section" id="destaques">
+        <div class="section-head"><h2>Em destaque</h2></div>
+        <div class="car" id="car" role="region" aria-roledescription="carrossel" aria-label="Cursos em destaque">
+          <div class="car-viewport"><div class="car-track" id="carTrack"></div></div>
+          <div class="car-bar"><div class="car-dots" id="carDots"></div>
+            <div class="car-btns"><button id="carPrev" aria-label="Destaque anterior">&#8249;</button><button id="carNext" aria-label="Próximo destaque">&#8250;</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="catalogSection">
+        <div class="section-head"><h2>Cursos</h2></div>
+        <div class="chips" id="chips" role="toolbar" aria-label="Filtrar por área"></div>
+        <div class="catalog" id="catalog"></div>
+      </div>
+
+      <div class="section" id="pacotes">
+        <div class="section-head"><h2>Pacotes com desconto</h2></div>
+        <div class="packs" id="packs"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><h2>Como funciona</h2></div>
+        <div class="journey">
+          <div class="step"><div class="knot">1</div><div><h3>Diagnóstico de entrada</h3><p>Perguntas rápidas por competência desenham sua teia inicial.</p></div></div>
+          <div class="step"><div class="knot">2</div><div><h3>Aulas em vídeo</h3><p>Demonstrações em modelo, com câmera no detalhe das mãos. Avance e acelere quando quiser; a aula conta quando 90% dela passou pela tela.</p></div></div>
+          <div class="step"><div class="knot">3</div><div><h3>Testes por módulo</h3><p>Anatomia, contraindicações e protocolo em múltipla escolha, com correção na hora.</p></div></div>
+          <div class="step"><div class="knot">4</div><div><h3>Diagnóstico final</h3><p>A teia de saída aparece sobre a de entrada, eixo por eixo.</p></div></div>
+          <div class="step"><div class="knot">5</div><div><h3>Certificado</h3><p>Certificado de curso livre, com carga horária e código de validação público.</p></div></div>
+        </div>
+      </div>
+
+      <div class="teach about">
+        <img class="about-pic" alt="Renan Fernandes" src="@@ASSET:renan-foto.jpg@@">
+        <div>
+          <h2 style="font-size:26px;font-weight:800">Quem ensina</h2>
+          <p style="margin-top:8px">Renan Fernandes é massoterapeuta há 12 anos em Curitiba, com foco em recuperação muscular e alívio de tensões. Nas aulas, a câmera fica onde importa: nas mãos dele, do jeito que você já conhece do Instagram.</p>
+          <dl class="about-facts"><div><dt>Experiência</dt><dd>12 anos</dd></div><div><dt>Atendimentos</dt><dd>+17 mil</dd></div><div><dt>Atende em</dt><dd>Curitiba e região</dd></div></dl>
+          <div class="soc" id="social" style="margin-top:18px"></div>
+        </div>
+        <a class="btn btn-oleo" href="https://wa.me/5511950517467?text=Ol%C3%A1%2C%20Renan!%20Quero%20agendar%20um%20atendimento." target="_blank" rel="noopener">Agendar pelo WhatsApp</a>
+      </div>
+      <div class="foot-logo"><img data-asset="logoCor" alt="Renan Fernandes Massoterapia"></div>
+      <p class="foot">Protótipo navegável. Cursos, preços, números de alunos e conversas são ilustrativos. Cursos livres: não habilitam como técnico em massoterapia e não substituem avaliação médica ou fisioterapêutica.</p>
+    </div>
+  </section>
+
+  <!-- CURSO -->
+  <section class="screen" id="s-curso">
+    <div class="course-hero">
+      <div class="wrap course-grid">
+        <div>
+          <button class="crumb" data-go="inicio">Voltar para cursos</button>
+          <h1 id="cTitle"></h1>
+          <div class="teacher"><div class="pic" id="cPic"></div><div><strong id="cTeacher"></strong><small id="cCity"></small></div></div>
+          <div class="facts" id="cFacts"></div>
+          <div class="c-about" id="cAbout"></div>
+        </div>
+        <div class="buybox" id="buybox"></div>
+      </div>
+    </div>
+    <div class="wrap two">
+      <div class="panel">
+        <h2>Conteúdo do curso</h2>
+        <p class="sub" id="cSub"></p>
+        <div id="modules"></div>
+      </div>
+      <div class="panel">
+        <h2>Competências</h2>
+        <p class="sub">Os eixos que o professor definiu. Seu diagnóstico mede cada um antes e depois.</p>
+        <div style="background:var(--mata);border-radius:16px;padding:6px" id="cWeb"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AULA -->
+  <section class="screen" id="s-aula">
+    <div class="wrap aula-grid">
+      <aside class="modmenu" id="modMenu" aria-label="Módulos e aulas do curso"></aside>
+      <div class="aula-main">
+    <div id="playerWrap" data-mode="sim">
+      <div class="player">
+        <div class="screenbox">
+          <div class="buf" id="buf" aria-hidden="true"><i></i></div>
+          <div class="stage" id="stage" hidden></div>
+          <div class="end-card" id="endCard" hidden></div>
+          <span class="demo-note">Demonstração em tempo acelerado</span>
+          <button class="bigplay" id="bigPlay" aria-label="Reproduzir"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#12161B"/></svg></button>
+          <div class="ttl" id="lTitle"></div>
+        </div>
+        <div class="controls">
+          <button class="ico" id="playBtn" aria-label="Reproduzir"></button>
+          <span class="time" id="timeNow">0:00</span>
+          <div class="track" id="track" role="slider" aria-label="Posição do vídeo" tabindex="0" aria-valuemin="0">
+            <div class="rail" id="railSeen"></div>
+            <div class="head" id="head"></div>
+          </div>
+          <span class="time" id="timeTotal"></span>
+          <button class="speed" id="speedBtn" aria-label="Velocidade">1x</button>
+          <button class="ico fs" id="fsBtn" aria-label="Tela cheia"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+      </div>
+      <div class="presence">
+        <div class="presence-head">
+          <h2>Presença na aula</h2>
+          <span class="pct" id="pct">0%</span>
+        </div>
+        <div class="ribbon" id="ribbon" aria-hidden="true"></div>
+        <div class="meter"><b id="meterFill" style="width:0"></b><span class="goal"></span></div>
+        <div class="meter-labels"><span>Assistido de verdade</span><span>Conclui em 90%</span></div>
+        <p class="rule">Pode avançar e acelerar até 2x à vontade. Só conta o trecho que passou na tela; os blocos coloridos mostram exatamente o que você já viu.</p>
+        <div class="done-banner" id="doneBanner">Aula concluída. Ela já conta no seu progresso e no certificado.</div>
+      </div>
+    </div>
+    <div class="two" style="margin-top:20px">
+      <div class="panel">
+        <h2>Dúvidas desta aula</h2>
+        <p class="sub">O professor responde por aqui. Você recebe um aviso por e-mail.</p>
+        <div class="qa-mini" id="qaMini"></div>
+        <button class="btn btn-anil full" style="margin-top:14px" data-go="duvidas">Perguntar ao professor</button>
+      </div>
+    </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- TEIA -->
+  <section class="screen" id="s-teia">
+    <div class="wrap">
+      <div id="diag"></div>
+      <div id="evo" hidden>
+      <div class="teia-top">
+        <h1 id="tTitle">Sua teia</h1>
+        <p>Cada eixo vai de 0 a 100 e vem das questões ligadas àquela competência. A área laranja é o diagnóstico de entrada; a azul, o de saída.</p>
+        <div class="seg" role="group" aria-label="Mostrar">
+          <button data-view="antes" aria-pressed="false">Antes</button>
+          <button data-view="depois" aria-pressed="false">Depois</button>
+          <button data-view="ambos" aria-pressed="true">Comparar</button>
+        </div>
+      </div>
+      <div class="teia-grid">
+        <div class="webpanel"><div id="bigWeb"></div><div class="legend"><span><i style="background:var(--lavanda)"></i>Entrada</span><span><i style="background:var(--oleo)"></i>Saída</span></div></div>
+        <div class="panel">
+          <h2>Evolução por eixo</h2>
+          <p class="sub" id="tAvg"></p>
+          <div id="axisList"></div>
+          <button class="btn btn-ghost full" style="margin-top:16px;color:var(--mata)" id="redo">Refazer diagnóstico de saída</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DUVIDAS -->
+  <section class="screen" id="s-duvidas">
+    <div class="wrap">
+      <div class="teia-top">
+        <h1>Dúvidas</h1>
+        <p>Conversas por aula, no seu ritmo. Dúvidas abertas ficam visíveis para o professor até serem respondidas.</p>
+      </div>
+      <div class="dv-grid">
+        <div class="thread-list" id="threadList"></div>
+        <div class="convo" id="convo"></div>
+      </div>
+    </div>
+  </section>
+  <!-- ADMIN -->
+  <section class="screen" id="s-adm-visao"><div class="wrap">
+    <div id="av-visao"></div>
+  </div></section>
+  <section class="screen" id="s-adm-alunos"><div class="wrap">
+    <div id="av-alunos"></div>
+  </div></section>
+  <section class="screen" id="s-adm-acessos"><div class="wrap">
+    <div id="av-acessos"></div>
+  </div></section>
+  <section class="screen" id="s-adm-certificados"><div class="wrap">
+    <div id="av-certificados"></div>
+  </div></section>
+  <section class="screen" id="s-adm-perguntas"><div class="wrap">
+    <div id="av-perguntas"></div>
+  </div></section>
+  <section class="screen" id="s-adm-cursos"><div class="wrap">
+    <div id="av-cursos"></div>
+  </div></section>
+  <section class="screen" id="s-adm-editor"><div class="wrap">
+    <div id="av-editor"></div>
+  </div></section>
+</main>
+
+<!-- overlays -->
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="loginSheet" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="grab"></div>
+  <button class="close" data-close>Fechar</button>
+  <h2 id="loginTitle">Entrar</h2>
+  <p style="color:var(--muted);font-size:14px;margin:6px 0 0">Contas de teste: <b>admin@teste.com</b> (administração) e <b>cliente@teste.com</b> (aluno, com compra aguardando liberação). Qualquer senha.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-auth="entrar">Entrar</button>
+    <button role="tab" aria-selected="false" data-auth="criar">Criar conta</button>
+  </div>
+  <form id="authForm">
+    <div class="field" id="nameField" hidden><label for="fName">Nome completo</label><input id="fName" autocomplete="name"></div>
+    <div class="field"><label for="fEmail">E-mail</label><input id="fEmail" type="email" value="matheus@exemplo.com.br" autocomplete="email"></div>
+    <div class="field"><label for="fPass">Senha</label><input id="fPass" type="password" value="12345678" autocomplete="current-password"></div>
+    <label class="consent" id="consentRow" hidden><input type="checkbox" id="fConsent"> Li e aceito os Termos de Uso e a Política de Privacidade, e autorizo o tratamento dos meus dados conforme a LGPD.</label>
+    <button class="btn btn-anil full" id="authSubmit">Entrar</button>
+    <div class="or">ou</div>
+    <button type="button" class="btn btn-ghost full" id="googleBtn">Continuar com Google</button>
+    <button type="button" class="btn btn-quiet full" id="forgotBtn">Esqueci minha senha</button>
+  </form>
+</div>
+
+<div class="sheet" id="checkoutSheet" role="dialog" aria-modal="true" aria-labelledby="coTitle">
+  <div class="grab"></div>
+  <button class="close" data-close>Fechar</button>
+  <div id="coBody">
+    <h2 id="coTitle">Finalizar compra</h2>
+    <div class="summary"><span id="coCourse"></span><b id="coPrice"></b></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-pay="pix">Pix</button>
+      <button role="tab" aria-selected="false" data-pay="cartao">Cartão</button>
+      <button role="tab" aria-selected="false" data-pay="boleto">Boleto</button>
+    </div>
+    <div id="payPix" class="pix">
+      <div id="qr"></div>
+      <div class="timer">Código válido por <b id="pixTimer">15:00</b></div>
+      <div class="copybox"><input readonly value="00020126580014br.gov.bcb.pix0136renan-demo-5204000053039865802BR"><button class="btn btn-anil" id="copyPix">Copiar</button></div>
+      <button class="btn btn-oleo full" id="confirmPix">Simular pagamento confirmado</button>
+    </div>
+    <div id="payCartao" hidden>
+      <div class="field"><label for="cc">Número do cartão</label><input id="cc" inputmode="numeric" placeholder="0000 0000 0000 0000"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label for="ccv">Validade</label><input id="ccv" placeholder="MM/AA"></div>
+        <div class="field"><label for="cvv">CVV</label><input id="cvv" inputmode="numeric" placeholder="123"></div>
+      </div>
+      <div class="field"><label for="inst">Parcelas</label><select id="inst"></select></div>
+      <button class="btn btn-oleo full" id="confirmCard">Pagar com cartão</button>
+    </div>
+    <div id="payBoleto" hidden>
+      <p style="color:var(--muted);margin-bottom:14px">O boleto vence em 3 dias úteis. O acesso é liberado assim que o banco confirmar, normalmente em até 2 dias úteis.</p>
+      <button class="btn btn-oleo full" id="confirmBoleto">Gerar boleto</button>
+    </div>
+  </div>
+  <div class="success" id="coSuccess">
+    <div class="check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1F9D6B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
+    <h2>Pagamento recebido</h2>
+    <p>Sua entrada no curso é liberada pela equipe depois da conferência do pagamento, normalmente em até 1 dia útil. Você recebe um aviso por e-mail.</p>
+    <button class="btn btn-anil full" data-go="curso">Voltar ao curso</button>
+  </div>
+</div>
+
+<div class="sheet sheet-wide" id="certSheet" role="dialog" aria-modal="true" aria-labelledby="certTitle">
+  <div class="grab"></div>
+  <button class="close" data-close>Fechar</button>
+  <h2 id="certTitle">Seu certificado</h2>
+  <div class="cert-view"><div id="certView"></div><button class="btn btn-anil full" id="certPdf">Baixar PDF</button></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/*@@JS@@*/
+</script>
+</body>
+</html>
